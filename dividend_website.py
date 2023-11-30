@@ -128,7 +128,7 @@ class DividendMoneylink(DividendWebsite):
         try:
             div_data = self.parse_div_data(soup)
         except Exception as err:
-            self.log.error('Failed to parse goodinfo for %s:' % stock_id)
+            self.log.error('Failed to parse moneylink page for %s:' % stock_id)
             self.log.error(err)
             traceback.print_exc()
             return None
