@@ -12,6 +12,7 @@ import os
 import traceback
 
 
+default_sleep_interval = 5
 default_watch_list_file = '~/.local/share/stock-robot/ex_dividend_watch_list.txt'
 log = logging.getLogger(os.path.basename(__file__))
 
@@ -81,6 +82,8 @@ def get_arguments():
                         help='Specify output file, if None output to stdout')
     parser.add_argument('-v', '--verbosity', action="count", default=0,
                         help='increase output verbosity')
+    parser.add_argument('-i', '--sleep-interval', type=int, default=default_sleep_interval,
+                        help='Sleep interval in seconds, default value is %(default)s (seconds)')
 
     return parser.parse_args()
 
@@ -118,8 +121,8 @@ def main():
             log.info('%s(%s) %s' % (__div_info.stock_id, __div_info.stock_name, __div_info.div_record[0]))
             div_info[stock_id] = __div_info
 
-        log.debug("Sleep to avoid DOS detecting..")
-        time.sleep(5)
+        log.debug("Sleep %d seconds to avoid DOS detecting.." % args.sleep_interval)
+        time.sleep(args.sleep_interval)
 
     if args.output is None:
         print('None of output file')
