@@ -63,8 +63,8 @@ class DividendGoodinfo(DividendWebsite):
         return top[2].text.split()[1]
 
     def get_dividend_info(self, stock_id: str) -> DividendInfo:
-        soup = self.get_web_soup(self.query_url % stock_id)
         try:
+            soup = self.get_web_soup(self.query_url % stock_id)
             div_data = self.parse_div_data(soup)
         except Exception as err:
             self.log.error('Failed to parse goodinfo for %s:' % stock_id)
@@ -123,9 +123,8 @@ class DividendMoneylink(DividendWebsite):
 
 
     def get_dividend_info(self, stock_id: str) -> DividendInfo:
-        soup = self.get_web_soup(self.query_url % stock_id)
-
         try:
+            soup = self.get_web_soup(self.query_url % stock_id)
             div_data = self.parse_div_data(soup)
         except Exception as err:
             self.log.error('Failed to parse moneylink page for %s:' % stock_id)
