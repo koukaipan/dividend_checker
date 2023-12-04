@@ -53,12 +53,15 @@ def write_to_file(outfile: io.TextIOWrapper, div_info: dict[str, DividendInfo]):
         info['stock_name'] = __info.stock_name
         if __info.error is not None:
             info['error'] = __info.error
+
+        div_data = {}
         for i, r in enumerate(__info.div_record):
-            info[i] = {}
-            info[i]['div_date'] = str(r.div_date)
-            info[i]['payable_date'] = str(r.payable_date)
-            info[i]['cash'] = r.cash
-            info[i]['stock'] = r.stock
+            div_data[i] = {}
+            div_data[i]['div_date'] = str(r.div_date)
+            div_data[i]['payable_date'] = str(r.payable_date)
+            div_data[i]['cash'] = r.cash
+            div_data[i]['stock'] = r.stock
+        info['div_data'] = div_data
 
         result[__key] = info
 
