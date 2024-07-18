@@ -7,10 +7,13 @@ import urllib
 import urllib.request
 
 class DividendWebsite:
-    def __init__(self):
+    def __init__(self, name: str = None):
         # use derived class name to create logger
         self.log = logging.getLogger(self.__class__.__name__)
-        self.name = self.__class__.__name__
+        if name == None:
+            self.name = self.__class__.__name__
+        else:
+            self.name = name
 
     def get_web_page(self, url: str):
         self.log.debug('fetch web page from %s' % url)
@@ -36,7 +39,7 @@ class DividendWebsite:
 
 class DividendGoodinfo(DividendWebsite):
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(name='goodinfo')
         self.query_url = 'https://goodinfo.tw/StockInfo/StockDividendSchedule.asp?STOCK_ID=%s'
 
     def parse_div_data(self, soup: BeautifulSoup) -> list[DividendRecord]:
@@ -80,7 +83,7 @@ class DividendGoodinfo(DividendWebsite):
 
 class DividendMoneylink(DividendWebsite):
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(name='moneylink')
         self.query_url = 'https://ww2.money-link.com.tw/TWStock/StockBasic.aspx?SymId=%s'
 
 
