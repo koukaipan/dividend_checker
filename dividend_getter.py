@@ -163,3 +163,8 @@ class DividendMoneylink(DividendWebsite):
             info.div_record = div_data
             return info
 
+
+all_dividend_getters = {
+    'moneylink': DividendMoneylink(),
+    'goodinfo': DividendGoodinfo(),
+}

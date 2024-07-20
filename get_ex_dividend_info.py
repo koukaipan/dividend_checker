@@ -5,7 +5,7 @@ import io
 import json
 from datetime import datetime, date, timedelta
 from dividend_info import DividendInfo, DividendRecord
-from dividend_website import DividendGoodinfo, DividendMoneylink
+from dividend_getter import DividendGoodinfo, DividendMoneylink
 import logging
 import time
 import os
