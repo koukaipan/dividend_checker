@@ -6,6 +6,9 @@ import traceback
 import urllib
 import urllib.request
 
+import asyncio
+from playwright.async_api import async_playwright
+
 class DividendWebsite:
     def __init__(self, name: str = None):
         # use derived class name to create logger
@@ -40,18 +43,39 @@ class DividendWebsite:
 class DividendGoodinfo(DividendWebsite):
     def __init__(self) -> None:
         super().__init__(name='goodinfo')
-        self.query_url = 'https://goodinfo.tw/StockInfo/StockDividendSchedule.asp?STOCK_ID=%s'
+        self.query_url = 'https://goodinfo.tw/tw/StockDividendSchedule.asp?STOCK_ID=%s'
+        self.page_redirect_timeout_ms = 2000
+
+
+    async def fetch_page(self, url):
+        self.log.debug('fetch web page from %s' % url)
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            await page.goto(url)
+            await page.wait_for_timeout(self.page_redirect_timeout_ms)  # Wait for JavaScript redirect
+            content = await page.content()
+            await browser.close()
+            return content
+
+        return None
+
+
+    def get_html_content(self, url):
+        html_content = asyncio.run(self.fetch_page(url))
+        soup = BeautifulSoup(html_content, 'html.parser')
+        return soup
+
 
     def parse_div_data(self, soup: BeautifulSoup) -> list[DividendRecord]:
-        div_table = soup.find('div', attrs={'id': 'divDetail'})
-        div_table = div_table.find('table')
+        div_table = soup.find('div', attrs={'id': 'divDetail'}).find('table')
         rows = div_table.find_all('tr', attrs={'align': 'center'})
         data = []
         for row in rows:
             cols = row.find_all('td')
             cols = [ele.text.strip() for ele in cols]
-            div_date = datetime.strptime(cols[3][0:8], '%y\'%m/%d').date() if len(cols[3]) > 0 else None
-            payable_date = datetime.strptime(cols[7][0:8], '%y\'%m/%d').date() if len(cols[7]) > 0 else None
+            div_date = datetime.strptime(cols[3][0:9], '\'%y/%m/%d').date() if len(cols[3]) > 0 else None
+            payable_date = datetime.strptime(cols[7][0:9], '\'%y/%m/%d').date() if len(cols[7]) > 0 else None
             cash = float(cols[14])
             stock = float(cols[17])
             d = DividendRecord(div_date, payable_date, cash, stock)
@@ -67,7 +91,7 @@ class DividendGoodinfo(DividendWebsite):
 
     def get_dividend_info(self, stock_id: str) -> DividendInfo:
         try:
-            soup = self.get_web_soup(self.query_url % stock_id)
+            soup = self.get_html_content(self.query_url % stock_id)
             div_data = self.parse_div_data(soup)
         except Exception as err:
             self.log.error('Failed to parse goodinfo for %s:' % stock_id)
