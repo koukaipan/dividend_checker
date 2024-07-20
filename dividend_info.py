@@ -47,3 +47,9 @@ class DividendInfo:
 
         self.div_record = future_div_record
 
+    def __str__(self) -> str:
+        return 'id:%s name:%s record:%s' % (self.stock_id, self.stock_name, str(self.div_record[0]))
+
+    def __repr__(self) -> str:
+        records = '\n'.join([str(_r) for _r in self.div_record])
+        return 'id:%s\n name:%s\n record:%s' % (self.stock_id, self.stock_name, records)
