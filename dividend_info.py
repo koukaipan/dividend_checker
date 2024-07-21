@@ -1,4 +1,5 @@
 from datetime import datetime, date, timedelta
+from typing import Dict
 
 class DividendRecord:
     def __init__(self):
@@ -15,9 +16,9 @@ class DividendRecord:
         self.stock = stock
 
     def __str__(self) -> str:
-        return 'div_date:%s payable_date:%s cash:%s stock:%s' % \
+        return 'div_date:%s payable_date:%s cash:%.2f stock:%.2f' % \
                (str(self.div_date), str(self.payable_date),
-                str(self.cash), str(self.stock))
+                self.cash, self.stock)
 
 
 class DividendInfo:
@@ -53,3 +54,20 @@ class DividendInfo:
     def __repr__(self) -> str:
         records = '\n'.join([str(_r) for _r in self.div_record])
         return 'id:%s\n name:%s\n record:%s' % (self.stock_id, self.stock_name, records)
+
+    def to_dict(self) -> Dict[str, str]:
+        d = {}
+        d['stock_id'] = self.stock_id
+        d['stock_name'] = self.stock_name
+        d['error'] = 'None' if self.error is None else self.error
+        d['div_record'] = []
+
+        for r in self.div_record:
+            record = {}
+            record['div_date'] = str(r.div_date)
+            record['payable_date'] = str(r.payable_date)
+            record['cash'] = "%.4f" % r.cash
+            record['stock'] = "%.4f" % r.stock
+            d['div_record'].append(record)
+
+        return d
