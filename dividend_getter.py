@@ -111,9 +111,13 @@ class DividendMoneylink(DividendWebsite):
         self.query_url = 'https://ww2.money-link.com.tw/TWStock/StockBasic.aspx?SymId=%s'
 
 
-    def parse_stockname(self, soup: BeautifulSoup) -> str:
+    def parse_stockname(self, soup: BeautifulSoup, stock_id: str) -> str:
         try:
             name = soup.find('meta')['content'].split(',')[1]
+            # stockname in moneylink are name+stock_id, try to remove the stock_id
+            # which is concated after name
+            if name.endswith(stock_id):
+                return name[:-len(stock_id)]
             return name
         except Exception as err:
             return 'Unknown'
@@ -159,7 +163,7 @@ class DividendMoneylink(DividendWebsite):
             traceback.print_exc()
             return None
         else:
-            info = DividendInfo(stock_id, self.parse_stockname(soup))
+            info = DividendInfo(stock_id, self.parse_stockname(soup, stock_id))
             info.div_record = div_data
             return info
 
