@@ -2,12 +2,15 @@ from bs4 import BeautifulSoup
 from datetime import datetime, date, timedelta
 from dividend_info import DividendInfo, DividendRecord
 import logging
+import os
 import traceback
 import urllib
 import urllib.request
 
 import asyncio
 from playwright.async_api import async_playwright
+
+log = logging.getLogger(os.path.basename(__file__))
 
 class DividendWebsite:
     def __init__(self, name: str = None):
@@ -172,3 +175,21 @@ all_dividend_getters = {
     'moneylink': DividendMoneylink(),
     'goodinfo': DividendGoodinfo(),
 }
+
+
+def get_dividend_info(stock_id: str,
+                      dividend_getters=all_dividend_getters) \
+                     -> DividendInfo:
+    for getter in dividend_getters.values():
+        log.debug('Using %s to get %s info' % (getter.name, stock_id))
+        info = getter.get_dividend_info(stock_id)
+        if info is not None and len(info.div_record) > 0:
+            if info.div_record[0].cash > 0.0 and \
+               info.div_record[0].payable_date is None:  # probably ETF
+                # Probably not yet decide payble_date
+                log.warn("The latest record has cash=%.2f but payble_date is None." %
+                         info.div_record[0].cash)
+            return info
+    else:
+        log.error('Failed to get ex dividend data for %s:' % stock_id)
+        return None
