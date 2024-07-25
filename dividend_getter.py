@@ -81,6 +81,9 @@ class DividendGoodinfo(DividendWebsite):
             payable_date = datetime.strptime(cols[7][0:9], '\'%y/%m/%d').date() if len(cols[7]) > 0 else None
             cash = float(cols[14])
             stock = float(cols[17])
+            if cash == 0.0 and stock == 0.0:
+                continue
+
             d = DividendRecord(div_date, payable_date, cash, stock)
             self.log.debug(d)
             data.append(d)
