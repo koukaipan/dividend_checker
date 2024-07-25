@@ -5,21 +5,19 @@ import io
 import json
 from datetime import datetime, date, timedelta
 from dividend_info import DividendInfo, DividendRecord
-from dividend_getter import DividendGoodinfo, DividendMoneylink, get_dividend_info
+import dividend_getter
 import logging
 import time
 import os
 import traceback
 
 
-default_sleep_interval = 5
+default_sleep_interval = dividend_getter.default_sleep_interval
 default_watch_list_file = '~/.local/share/stock-robot/ex_dividend_watch_list.txt'
 log = logging.getLogger(os.path.basename(__file__))
 
-goodinfo = DividendGoodinfo()
-moneylink = DividendMoneylink()
-dividend_getters = [moneylink, goodinfo]
-
+# TODO: parameterize this
+prefer_getters = [dividend_getter.DividendMoneylink()]
 
 def read_watch_list_file(stock_list_file):
     # watch_list_path = os.path.expanduser(default_watch_list_file)
@@ -76,24 +74,10 @@ def main():
         stocks = args.stocks
 
     log.info('Today is %s' % date.today())
-    div_info = {}
-    for stock_id in stocks:
-        log.info('Obtaining %s...' % stock_id)
-        __div_info = get_dividend_info(stock_id)
-
-        if __div_info is None:
-            info = DividendInfo(stock_id=stock_id, stock_name="NA")
-            info.error = '找不到 %s 的任何資料，可能網頁分析失敗' % stock_id
-            log.error(info.error)
-            div_info[stock_id] = info
-        elif len(__div_info.div_record) == 0:
-            log.info('%s(%s) 最近沒有除權息資料，可能真的缺乏除權息資料' % (__div_info.stock_name, __div_info.stock_name))
-        else:
-            log.info('%s(%s) %s' % (__div_info.stock_id, __div_info.stock_name, __div_info.div_record[0]))
-            div_info[stock_id] = __div_info
-
-        log.debug("Sleep %d seconds to avoid DOS detecting.." % args.sleep_interval)
-        time.sleep(args.sleep_interval)
+    div_info = dividend_getter.get_many_dividend_info(stocks,
+                                                      prefer_getters,
+                                                      max_nr_record=1,
+                                                      sleep_interval=args.sleep_interval)
 
     if args.output is None:
         print('None of output file')

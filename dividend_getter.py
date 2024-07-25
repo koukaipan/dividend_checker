@@ -3,7 +3,9 @@ from datetime import datetime, date, timedelta
 from dividend_info import DividendInfo, DividendRecord
 import logging
 import os
+import time
 import traceback
+from typing import Dict, List
 import urllib
 import urllib.request
 
@@ -11,6 +13,10 @@ import asyncio
 from playwright.async_api import async_playwright
 
 log = logging.getLogger(os.path.basename(__file__))
+
+# To prevent DOS protection, in seconds
+default_sleep_interval = 2
+default_max_nr_record = 1
 
 class DividendWebsite:
     def __init__(self, name: str = None):
@@ -241,18 +247,52 @@ all_dividend_getters = {
 
 
 def get_dividend_info(stock_id: str,
-                      dividend_getters=all_dividend_getters) \
+                      dividend_getters=all_dividend_getters.values(),
+                      max_nr_record: int=default_max_nr_record) \
                      -> DividendInfo:
-    for getter in dividend_getters.values():
+    for getter in dividend_getters:
         log.debug('Using %s to get %s info' % (getter.name, stock_id))
         info = getter.get_dividend_info(stock_id)
-        if info is not None and len(info.div_record) > 0:
-            if info.div_record[0].cash > 0.0 and \
-               info.div_record[0].payable_date is None:  # probably ETF
-                # Probably not yet decide payble_date
-                log.warn("The latest record has cash=%.2f but payble_date is None." %
-                         info.div_record[0].cash)
+        if info is not None:
+            if len(info.div_record) > 0:
+                if info.div_record[0].cash > 0.0 and \
+                   info.div_record[0].payable_date is None:  # probably ETF
+                    # Probably not yet decide payble_date
+                    log.warn("The latest record has cash=%.2f but payble_date is None." %
+                             info.div_record[0].cash)
+
+                if len(info.div_record) > max_nr_record:
+                    info.div_record = info.div_record[0:max_nr_record]
+
             return info
     else:
         log.error('Failed to get ex dividend data for %s:' % stock_id)
         return None
+
+
+def get_many_dividend_info(stocks: list,
+                           dividend_getters=all_dividend_getters.values(),
+                           max_nr_record: int=default_max_nr_record,
+                           sleep_interval: int=default_sleep_interval) -> Dict[str, DividendInfo]:
+    div_info = {}
+    for stock_id in stocks:
+        log.info('Obtaining %s...' % stock_id)
+        __div_info = get_dividend_info(stock_id, dividend_getters)
+
+        if __div_info is None:
+            __div_info = DividendInfo(stock_id=stock_id, stock_name="NA")
+            __div_info.error = '找不到 %s 的任何資料，可能網頁分析失敗' % stock_id
+            log.error(__div_info.error)
+        elif len(__div_info.div_record) == 0:
+            __div_info.error = '%s(%s) 最近沒有除權息資料，可能真的缺乏除權息資料' % \
+                                (__div_info.stock_name, __div_info.stock_name)
+            log.warn(__div_info.error)
+        else:
+            log.info('%s(%s) %s' % (__div_info.stock_id, __div_info.stock_name, __div_info.div_record[0]))
+
+        div_info[stock_id] = __div_info
+
+        log.debug("Sleep %d seconds to avoid DOS detecting.." % sleep_interval)
+        time.sleep(sleep_interval)
+
+    return div_info
