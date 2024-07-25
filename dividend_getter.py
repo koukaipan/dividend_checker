@@ -132,14 +132,7 @@ class DividendMoneylink(DividendWebsite):
         return '/'.join(_date_str)
 
 
-    def parse_div_data(self, soup):
-        tables = soup.find_all('table')
-        for table in tables:
-            if table.find('th', string='除息'):
-                break
-        else:
-            self.log.error('cannot find ex-dividend table')
-
+    def parse_div_table_etf(self, table) -> list[DividendRecord]:
         rows = table.find_all('tr')
         data = []
         for row in rows[2:]:  # skip row0 and row1 (title)
@@ -154,6 +147,63 @@ class DividendMoneylink(DividendWebsite):
             self.log.debug(d)
             data.append(d)
         return data
+
+
+    def parse_div_table_normal(self, table) -> list[DividendRecord]:
+        # Normal stock in moneylink has only one ex-dividend record
+        try:
+            stock = float(table.find_all('tr')[4].find_all('td')[0].text)
+        except ValueError:
+            stock = 0.0
+
+        try:
+            cash = float(table.find_all('tr')[3].find_all('td')[0].text)
+        except ValueError:
+            cash = 0.0
+
+        td = table.find_all('tr')[1].find_all('td')[2]
+        for span in td.find_all('span', class_='mg'):
+            span.decompose()
+        try:
+            div_date = datetime.strptime(td.text, '%Y/%m/%d').date()
+        except ValueError:
+            log.error('Cannot convert %s to date\n', td.text)
+            div_date = None
+
+        td = table.find_all('tr')[2].find_all('td')[2]
+        for span in td.find_all('span', class_='mg'):
+            span.decompose()
+        try:
+            payable_date = datetime.strptime(td.text, '%Y/%m/%d').date()
+        except ValueError:
+            log.error('Cannot convert %s to date\n', td.text)
+            payable_date = None
+
+        d = DividendRecord(div_date, payable_date, cash, stock)
+        self.log.debug(d)
+
+        return [d]
+
+
+    def parse_div_data(self, soup) -> list[DividendRecord]:
+        tables = soup.find_all('table')
+        for table in tables:
+            if table.find('th', string='除息'):
+                break
+        else:
+            self.log.error('cannot find ex-dividend table')
+            return None
+
+        nr_th = len(table.find_all('th', id='HEAD1'))
+        if (nr_th == 1):
+            self.log.debug('%s is probably ETF.')
+            return self.parse_div_table_etf(table)
+        elif (nr_th == 3):
+            self.log.debug('%s is probably normal stock.')
+            return self.parse_div_table_normal(table)
+        else:
+            self.log.warn('%s id unknown stock type. Try normal one')
+            return self.parse_div_table_normal(table)
 
 
     def get_dividend_info(self, stock_id: str) -> DividendInfo:
