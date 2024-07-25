@@ -32,24 +32,8 @@ def write_to_file(outfile: io.TextIOWrapper, div_info: dict[str, DividendInfo]):
     log.debug('There are total %d div_info' % len(div_info))
     result = {}
     for __key, __info in div_info.items():
-        info = {}
-        info['stock_id'] = __info.stock_id
-        info['stock_name'] = __info.stock_name
-        if __info.error is not None:
-            info['error'] = __info.error
+        result[__key] = __info.to_dict()
 
-        div_data = {}
-        for i, r in enumerate(__info.div_record):
-            div_data[i] = {}
-            div_data[i]['div_date'] = str(r.div_date)
-            div_data[i]['payable_date'] = str(r.payable_date)
-            div_data[i]['cash'] = r.cash
-            div_data[i]['stock'] = r.stock
-        info['div_data'] = div_data
-
-        result[__key] = info
-
-    print(result)
     json.dump(result, outfile, indent=2, ensure_ascii=False)
 
 
@@ -99,11 +83,11 @@ def main():
 
         if __div_info is None:
             info = DividendInfo(stock_id=stock_id, stock_name="NA")
-            info.error = '找不到 %s 的任何資料' % stock_id
-            log.error('找不到 %s 的任何資料' % stock_id)
+            info.error = '找不到 %s 的任何資料，可能網頁分析失敗' % stock_id
+            log.error(info.error)
             div_info[stock_id] = info
         elif len(__div_info.div_record) == 0:
-            log.info('%s(%s) 最近沒有除權息資料' % (__div_info.stock_name, __div_info.stock_name))
+            log.info('%s(%s) 最近沒有除權息資料，可能真的缺乏除權息資料' % (__div_info.stock_name, __div_info.stock_name))
         else:
             log.info('%s(%s) %s' % (__div_info.stock_id, __div_info.stock_name, __div_info.div_record[0]))
             div_info[stock_id] = __div_info
