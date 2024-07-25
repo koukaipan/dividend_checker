@@ -5,7 +5,7 @@ import io
 import json
 from datetime import datetime, date, timedelta
 from dividend_info import DividendInfo, DividendRecord
-from dividend_getter import DividendGoodinfo, DividendMoneylink
+from dividend_getter import DividendGoodinfo, DividendMoneylink, get_dividend_info
 import logging
 import time
 import os
@@ -19,22 +19,6 @@ log = logging.getLogger(os.path.basename(__file__))
 goodinfo = DividendGoodinfo()
 moneylink = DividendMoneylink()
 dividend_getters = [moneylink, goodinfo]
-
-def get_dividend_info(stock_id, keep_all_record: bool=False) -> DividendInfo:
-    for getter in dividend_getters:
-        log.debug('Using %s to get %s info' % (getter.name, stock_id))
-        info = getter.get_dividend_info(stock_id)
-        if info is not None and len(info.div_record) > 0:
-            if info.div_record[0].cash > 0.0 and \
-               info.div_record[0].payable_date is None:  # probably ETF
-                continue
-            else:
-                if not keep_all_record:
-                    info.filter_future_event()
-                return info
-    else:
-        log.error('Failed to get ex dividend data for %s:' % stock_id)
-        return None
 
 
 def read_watch_list_file(stock_list_file):
@@ -111,7 +95,7 @@ def main():
     div_info = {}
     for stock_id in stocks:
         log.info('Obtaining %s...' % stock_id)
-        __div_info = get_dividend_info(stock_id, keep_all_record=args.all_record)
+        __div_info = get_dividend_info(stock_id)
 
         if __div_info is None:
             info = DividendInfo(stock_id=stock_id, stock_name="NA")
