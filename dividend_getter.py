@@ -152,14 +152,24 @@ class DividendMoneylink(DividendWebsite):
     def parse_div_table_normal(self, table) -> list[DividendRecord]:
         # Normal stock in moneylink has only one ex-dividend record
         try:
-            stock = float(table.find_all('tr')[4].find_all('td')[0].text)
+            text = table.find_all('tr')[4].find_all('td')[0].text
+            if text == '-':
+                stock = 0
+            else:
+                stock = float(text)
         except ValueError:
-            stock = 0.0
+            self.log.error("分析除權股息失敗:%s" % text)
+            return None
 
         try:
-            cash = float(table.find_all('tr')[3].find_all('td')[0].text)
+            text = table.find_all('tr')[3].find_all('td')[0].text
+            if text == '-':
+                cash = 0.0
+            else:
+                cash = float(text)
         except ValueError:
-            cash = 0.0
+            self.log.error("分析除息股利失敗:%s" % text)
+            return None
 
         td = table.find_all('tr')[1].find_all('td')[2]
         for span in td.find_all('span', class_='mg'):
@@ -167,8 +177,8 @@ class DividendMoneylink(DividendWebsite):
         try:
             div_date = datetime.strptime(td.text, '%Y/%m/%d').date()
         except ValueError:
-            log.error('Cannot convert %s to date\n', td.text)
-            div_date = None
+            self.log.error("分析除權息日期失敗:%s" % td.text)
+            return None
 
         td = table.find_all('tr')[2].find_all('td')[2]
         for span in td.find_all('span', class_='mg'):
@@ -176,8 +186,8 @@ class DividendMoneylink(DividendWebsite):
         try:
             payable_date = datetime.strptime(td.text, '%Y/%m/%d').date()
         except ValueError:
-            log.error('Cannot convert %s to date\n', td.text)
-            payable_date = None
+            self.log.error("分析除權息日期失敗:%s" % td.text)
+            return None
 
         d = DividendRecord(div_date, payable_date, cash, stock)
         self.log.debug(d)
