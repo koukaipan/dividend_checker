@@ -185,7 +185,7 @@ class DividendMoneylink(DividendWebsite):
         return [d]
 
 
-    def parse_div_data(self, soup) -> list[DividendRecord]:
+    def parse_div_data(self, stock_id, soup) -> list[DividendRecord]:
         tables = soup.find_all('table')
         for table in tables:
             if table.find('th', string='除息'):
@@ -196,20 +196,20 @@ class DividendMoneylink(DividendWebsite):
 
         nr_th = len(table.find_all('th', id='HEAD1'))
         if (nr_th == 1):
-            self.log.debug('%s is probably ETF.')
+            self.log.debug('%s is probably ETF.' % stock_id)
             return self.parse_div_table_etf(table)
         elif (nr_th == 3):
-            self.log.debug('%s is probably normal stock.')
+            self.log.debug('%s is probably normal stock.' % stock_id)
             return self.parse_div_table_normal(table)
         else:
-            self.log.warn('%s id unknown stock type. Try normal one')
+            self.log.warn('%s is unknown stock type. Try normal one' % stock_id)
             return self.parse_div_table_normal(table)
 
 
     def get_dividend_info(self, stock_id: str) -> DividendInfo:
         try:
             soup = self.get_web_soup(self.query_url % stock_id)
-            div_data = self.parse_div_data(soup)
+            div_data = self.parse_div_data(stock_id, soup)
         except Exception as err:
             self.log.error('Failed to parse moneylink page for %s:' % stock_id)
             self.log.error(err)

@@ -29,7 +29,7 @@ def read_watch_list_file(stock_list_file):
 
 
 def write_to_file(outfile: io.TextIOWrapper, div_info: dict[str, DividendInfo]):
-    log.debug('There are total %d div_info' % len(div_info))
+    log.debug('There are total %d div_info, written to %s' % (len(div_info), outfile.name))
     result = {}
     for __key, __info in div_info.items():
         result[__key] = __info.to_dict()
