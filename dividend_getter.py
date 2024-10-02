@@ -8,6 +8,7 @@ import traceback
 from typing import Dict, List
 import urllib
 import urllib.request
+from urllib.error import HTTPError, URLError
 
 import asyncio
 from playwright.async_api import async_playwright
@@ -36,8 +37,26 @@ class DividendWebsite:
                     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) '
                                   'Chrome/35.0.1916.47 Safari/537.36 '
                 })
-        page = urllib.request.urlopen(req)
-        return page
+        try:
+            page = urllib.request.urlopen(url)
+            return page
+        except HTTPError as e:
+            if e.code == 503:
+                self.log.warning("Received HTTP 503, retrying once...")
+                time.sleep(2)
+                try:
+                    response = urllib.request.urlopen(url)
+                    return response.read()
+                except HTTPError as e:
+                    self.log.error(f"Retry failed, HTTPError: {e}")
+                except URLError as e:
+                    self.log.error(f"Retry failed, URLError: {e}")
+            else:
+                self.log.error(f"HTTPError: {e.code} - {e.reason}")
+        except URLError as e:
+            self.log.error(f"URLError: {e.reason}")
+        return None
+
 
     def get_web_soup(self, url: str) -> BeautifulSoup:
         page = self.get_web_page(url)
