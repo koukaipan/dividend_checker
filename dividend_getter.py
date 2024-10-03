@@ -37,24 +37,19 @@ class DividendWebsite:
                     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) '
                                   'Chrome/35.0.1916.47 Safari/537.36 '
                 })
-        try:
-            page = urllib.request.urlopen(url)
-            return page
-        except HTTPError as e:
-            if e.code == 503:
-                self.log.warning("Received HTTP 503, retrying once...")
-                time.sleep(2)
-                try:
-                    response = urllib.request.urlopen(url)
-                    return response.read()
-                except HTTPError as e:
-                    self.log.error(f"Retry failed, HTTPError: {e}")
-                except URLError as e:
-                    self.log.error(f"Retry failed, URLError: {e}")
-            else:
-                self.log.error(f"HTTPError: {e.code} - {e.reason}")
-        except URLError as e:
-            self.log.error(f"URLError: {e.reason}")
+
+        retry_cnt = 0
+        max_retry = 2
+        retry_interval_sec = 2
+        while retry_cnt < max_retry:
+            try:
+                page = urllib.request.urlopen(url)
+                return page
+            except Exception as err:
+                self.log.warning("Exception occured: %s" % err)
+                self.log.debug("Retry (%d) after %d second.." % (retry_cnt, retry_interval_sec))
+                time.sleep(retry_interval_sec)
+                retry_cnt += 1
         return None
 
 
