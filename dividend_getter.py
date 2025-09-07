@@ -43,8 +43,11 @@ class DividendWebsite:
         retry_interval_sec = 2
         while retry_cnt < max_retry:
             try:
-                page = urllib.request.urlopen(url)
-                return page
+                response = urllib.request.urlopen(url)
+                encoding = response.info().get_content_charset() or 'utf-8'
+                html_bytes = response.read()
+                html_string = html_bytes.decode(encoding, 'ignore')
+                return html_string
             except Exception as err:
                 self.log.warning("Exception occured: %s" % err)
                 self.log.debug("Retry (%d) after %d second.." % (retry_cnt, retry_interval_sec))
@@ -254,8 +257,99 @@ class DividendMoneylink(DividendWebsite):
             return info
 
 
+class DividendMoneylink2(DividendWebsite):
+    '''
+    Use the overall table to get recent div data in one shot to avoid DOS detection
+    '''
+    def __init__(self) -> None:
+        super().__init__(name='moneylink2')
+        self.query_url = 'https://www.moneydj.com/Z/ZE/ZEB/ZEB.djhtm'
+        self.soup = self.get_web_soup(self.query_url)
+        self.soup_string = str(self.soup)
+
+    def get_stockname(self, found_script) -> str:
+        try:
+            text = found_script.string.strip().split("'")
+            stockname = text[3]
+            return stockname
+        except Exception as err:
+            self.log.error('Failed to parse stockname from %s:' % found_script)
+            self.log.error(err)
+            traceback.print_exc()
+            return 'None'
+
+
+    def parse_div_info(self, found_tr) -> list[DividendRecord]:
+        div_data = []
+        td_list = found_tr.find_all('td')
+        try:
+            date_string = td_list[1].get_text(strip=True)
+            div_date = datetime.strptime(date_string, '%Y/%m/%d').date()
+        except ValueError:
+            self.log.error("分析除息日期失敗:%s" % td_list)
+            return None
+
+        try:
+            cash = float(td_list[4].get_text(strip=True))
+        except ValueError:
+            self.log.error("分析現金股利失敗:%s" % td_list)
+            return None
+
+        try:
+            date_string = td_list[5].get_text(strip=True)
+            payable_date = datetime.strptime(date_string, '%Y/%m/%d').date()
+        except ValueError:
+            self.log.error("分析股利發放日期失敗:%s" % td_list)
+            return None
+
+        d = DividendRecord(div_date, payable_date, cash, 0.0)
+        self.log.debug(d)
+        div_data.append(d)
+
+        return div_data
+
+    def get_dividend_info(self, stock_id: str) -> DividendInfo:
+        found_script = None
+        found_tr = None
+        try:
+            all_scripts = self.soup.find_all('script')
+            for script in all_scripts:
+                found_content = script.string
+                if found_content and stock_id in found_content:
+                    found_script = script
+                    break
+            else:
+                self.log.debug('Not found record for %s' % stock_id)
+
+            if found_script:
+                found_tr = found_script.find_parent('tr')
+                if not found_tr:
+                    self.log.error("Found script, but cannot found parent <tr>")
+        except Exception as err:
+            self.log.error('Failed to parse moneylink page for %s:' % stock_id)
+            self.log.error(err)
+            traceback.print_exc()
+            return None
+        else:
+            info = None
+            if found_script:    # Case: found one
+                stock_name = self.get_stockname(found_script)
+                info = DividendInfo(stock_id, stock_name=stock_name)
+                if found_tr:
+                    info.div_record = self.parse_div_info(found_tr)
+                else:           # Case: probably web paging paring error
+                    info.div_record = []
+            else:               # Case: Not found any, make an empty one to avoid error
+                info = DividendInfo(stock_id, 'NA')
+                div_data = DividendRecord(0, 0, 0, 0)
+                info.div_record = [div_data]
+
+            return info
+
+
 all_dividend_getters = {
     'moneylink': DividendMoneylink(),
+    'moneylink2': DividendMoneylink2(),
     'goodinfo': DividendGoodinfo(),
 }
 
@@ -310,3 +404,21 @@ def get_many_dividend_info(stocks: list,
         time.sleep(sleep_interval)
 
     return div_info
+
+
+if __name__ == '__main__':
+    log_format = '[%(levelname)7s] %(asctime)s %(name)s %(message)s'
+    logging.basicConfig(level=logging.DEBUG, format=log_format)
+
+    prefer_getters = [DividendMoneylink2()]
+    # prefer_getters = all_dividend_getters.values()
+
+    stocks = ['1784']
+    sleep_interval = 1
+
+    div_info = get_many_dividend_info(stocks,
+                                      prefer_getters,
+                                      max_nr_record=1,
+                                      sleep_interval=sleep_interval)
+
+    print(div_info)

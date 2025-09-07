@@ -10,4 +10,4 @@ SELF_DIR=`dirname "$0"`
 PY_BIN=$SELF_DIR/get_ex_dividend_info.py
 
 mkdir -p $LOG_PATH
-cd $SELF_DIR && $SELF_DIR/venv/bin/python3 $PY_BIN -i 20 -vv --stock-list-file $SELF_DIR/$STOCK_LIST -o $OUTPUT_FILE 2>&1 | tee $LOG_FILE
+cd $SELF_DIR && $SELF_DIR/venv/bin/python3 $PY_BIN -i 1 -vv --stock-list-file $SELF_DIR/$STOCK_LIST -o $OUTPUT_FILE 2>&1 | tee $LOG_FILE

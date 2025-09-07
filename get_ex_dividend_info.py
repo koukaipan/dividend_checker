@@ -17,7 +17,7 @@ default_watch_list_file = '~/.local/share/stock-robot/ex_dividend_watch_list.txt
 log = logging.getLogger(os.path.basename(__file__))
 
 # TODO: parameterize this
-prefer_getters = [dividend_getter.DividendMoneylink()]
+prefer_getters = [dividend_getter.DividendMoneylink2()]
 
 def read_watch_list_file(stock_list_file):
     # watch_list_path = os.path.expanduser(default_watch_list_file)
