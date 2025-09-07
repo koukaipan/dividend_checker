@@ -257,12 +257,12 @@ class DividendMoneylink(DividendWebsite):
             return info
 
 
-class DividendMoneylink2(DividendWebsite):
+class DividendMoneydj(DividendWebsite):
     '''
     Use the overall table to get recent div data in one shot to avoid DOS detection
     '''
     def __init__(self) -> None:
-        super().__init__(name='moneylink2')
+        super().__init__(name='moneydj')
         self.query_url = 'https://www.moneydj.com/Z/ZE/ZEB/ZEB.djhtm'
         self.soup = self.get_web_soup(self.query_url)
         self.soup_string = str(self.soup)
@@ -349,7 +349,7 @@ class DividendMoneylink2(DividendWebsite):
 
 all_dividend_getters = {
     'moneylink': DividendMoneylink(),
-    'moneylink2': DividendMoneylink2(),
+    'moneydj': DividendMoneydj(),
     'goodinfo': DividendGoodinfo(),
 }
 
@@ -410,7 +410,7 @@ if __name__ == '__main__':
     log_format = '[%(levelname)7s] %(asctime)s %(name)s %(message)s'
     logging.basicConfig(level=logging.DEBUG, format=log_format)
 
-    prefer_getters = [DividendMoneylink2()]
+    prefer_getters = [DividendMoneydj()]
     # prefer_getters = all_dividend_getters.values()
 
     stocks = ['1784']
