@@ -235,7 +235,7 @@ class DividendMoneylink(DividendWebsite):
             self.log.debug('%s is probably normal stock.' % stock_id)
             return self.parse_div_table_normal(table)
         else:
-            self.log.warn('%s is unknown stock type. Try normal one' % stock_id)
+            self.log.warning('%s is unknown stock type. Try normal one' % stock_id)
             return self.parse_div_table_normal(table)
 
 
@@ -272,8 +272,8 @@ def get_dividend_info(stock_id: str,
                 if info.div_record[0].cash > 0.0 and \
                    info.div_record[0].payable_date is None:  # probably ETF
                     # Probably not yet decide payble_date
-                    log.warn("The latest record has cash=%.2f but payble_date is None." %
-                             info.div_record[0].cash)
+                    log.warning("The latest record has cash=%.2f but payble_date is None." %
+                                info.div_record[0].cash)
 
                 if len(info.div_record) > max_nr_record:
                     info.div_record = info.div_record[0:max_nr_record]
@@ -300,7 +300,7 @@ def get_many_dividend_info(stocks: list,
         elif len(__div_info.div_record) == 0:
             __div_info.error = '%s(%s) 最近沒有除權息資料，可能真的缺乏除權息資料' % \
                                 (__div_info.stock_name, __div_info.stock_name)
-            log.warn(__div_info.error)
+            log.warning(__div_info.error)
         else:
             log.info('%s(%s) %s' % (__div_info.stock_id, __div_info.stock_name, __div_info.div_record[0]))
 
