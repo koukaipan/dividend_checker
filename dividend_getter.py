@@ -287,20 +287,20 @@ class DividendMoneydj(DividendWebsite):
             div_date = datetime.strptime(date_string, '%Y/%m/%d').date()
         except ValueError:
             self.log.error("分析除息日期失敗:%s" % td_list)
-            return None
+            div_date = 0
 
         try:
             cash = float(td_list[4].get_text(strip=True))
         except ValueError:
             self.log.error("分析現金股利失敗:%s" % td_list)
-            return None
+            cash = 0.0
 
         try:
             date_string = td_list[5].get_text(strip=True)
             payable_date = datetime.strptime(date_string, '%Y/%m/%d').date()
         except ValueError:
             self.log.error("分析股利發放日期失敗:%s" % td_list)
-            return None
+            payable_date = 0
 
         d = DividendRecord(div_date, payable_date, cash, 0.0)
         self.log.debug(d)
