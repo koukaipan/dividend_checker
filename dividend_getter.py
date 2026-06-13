@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from datetime import datetime, date, timedelta
+import ssl
 from dividend_info import DividendInfo, DividendRecord
 import logging
 import os
@@ -43,7 +44,8 @@ class DividendWebsite:
         retry_interval_sec = 2
         while retry_cnt < max_retry:
             try:
-                response = urllib.request.urlopen(url)
+                context = ssl._create_unverified_context()
+                response = urllib.request.urlopen(req, context=context)
                 encoding = response.info().get_content_charset() or 'utf-8'
                 html_bytes = response.read()
                 html_string = html_bytes.decode(encoding, 'ignore')
@@ -264,8 +266,13 @@ class DividendMoneydj(DividendWebsite):
     def __init__(self) -> None:
         super().__init__(name='moneydj')
         self.query_url = 'https://www.moneydj.com/Z/ZE/ZEB/ZEB.djhtm'
-        self.soup = self.get_web_soup(self.query_url)
-        self.soup_string = str(self.soup)
+        self._soup = None
+
+    @property
+    def soup(self):
+        if self._soup is None:
+            self._soup = self.get_web_soup(self.query_url)
+        return self._soup
 
     def get_stockname(self, found_script) -> str:
         try:
@@ -353,6 +360,11 @@ all_dividend_getters = {
     'goodinfo': DividendGoodinfo(),
 }
 
+default_sleep_intervals = {
+    'moneylink': 20,
+    'moneydj': 2,
+    'goodinfo': 2,
+}
 
 def get_dividend_info(stock_id: str,
                       dividend_getters=all_dividend_getters.values(),
@@ -412,13 +424,12 @@ if __name__ == '__main__':
 
     prefer_getters = [DividendMoneydj()]
     # prefer_getters = all_dividend_getters.values()
+    stocks = ['1784', '0050', '2330', '2454', '0056']
 
-    stocks = ['1784']
-    sleep_interval = 1
-
-    div_info = get_many_dividend_info(stocks,
-                                      prefer_getters,
-                                      max_nr_record=1,
-                                      sleep_interval=sleep_interval)
-
-    print(div_info)
+    for g in prefer_getters:
+        div_info = get_many_dividend_info(stocks,
+                                          [g],
+                                          max_nr_record=1,
+                                          sleep_interval=default_sleep_intervals[g.name])
+        print(g.name)
+        print(div_info)

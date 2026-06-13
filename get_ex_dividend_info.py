@@ -74,9 +74,10 @@ def main():
         stocks = args.stocks
 
     log.info('Today is %s' % date.today())
+    max_nr = 999 if args.all_record else 1
     div_info = dividend_getter.get_many_dividend_info(stocks,
                                                       prefer_getters,
-                                                      max_nr_record=1,
+                                                      max_nr_record=max_nr,
                                                       sleep_interval=args.sleep_interval)
 
     if args.output is None:

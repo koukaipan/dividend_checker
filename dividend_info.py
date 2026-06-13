@@ -2,14 +2,8 @@ from datetime import datetime, date, timedelta
 from typing import Dict
 
 class DividendRecord:
-    def __init__(self):
-        self.div_date = None
-        self.payable_date = None
-        self.cash = 0.0
-        self.stock = 0.0
-
-    def __init__(self, div_date:datetime.date, payable_date:datetime.date,
-                 cash:float, stock:float):
+    def __init__(self, div_date: date = None, payable_date: date = None,
+                 cash: float = 0.0, stock: float = 0.0):
         self.div_date = div_date
         self.payable_date = payable_date
         self.cash = cash
@@ -22,13 +16,7 @@ class DividendRecord:
 
 
 class DividendInfo:
-    def __init__(self):
-        self.stock_id = 0
-        self.stock_name = ''
-        self.div_record = []
-        self.error = None
-
-    def __init__(self, stock_id: str, stock_name: str):
+    def __init__(self, stock_id: str = "0", stock_name: str = ""):
         self.stock_id = stock_id
         self.stock_name = stock_name
         self.div_record = []
